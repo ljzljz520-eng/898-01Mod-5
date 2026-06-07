@@ -242,6 +242,80 @@ if ! check_table personal_access_tokens; then
     " 2>/dev/null || true
 fi
 
+# Create lost_pets table if not exists
+if ! check_table lost_pets; then
+    echo "Creating lost_pets table..."
+    php -r "
+    \$pdo = new PDO('mysql:host=mysql;port=3306;dbname=forum', 'forum_user', 'forum_pass');
+    \$pdo->exec(\"
+    CREATE TABLE IF NOT EXISTS lost_pets (
+        id bigint unsigned NOT NULL AUTO_INCREMENT,
+        user_id bigint unsigned NOT NULL,
+        pet_name varchar(100) DEFAULT NULL,
+        pet_type enum('dog','cat','other') NOT NULL DEFAULT 'dog',
+        breed varchar(100) DEFAULT NULL,
+        color varchar(50) DEFAULT NULL,
+        collar_features varchar(255) DEFAULT NULL,
+        description text DEFAULT NULL,
+        photo_path varchar(255) DEFAULT NULL,
+        last_seen_lat decimal(10,7) NOT NULL,
+        last_seen_lng decimal(10,7) NOT NULL,
+        last_seen_address varchar(255) NOT NULL,
+        last_seen_at timestamp NOT NULL,
+        contact_phone varchar(20) NOT NULL,
+        contact_name varchar(50) DEFAULT NULL,
+        thank_you_note text DEFAULT NULL,
+        status enum('lost','found','closed') NOT NULL DEFAULT 'lost',
+        view_count int NOT NULL DEFAULT 0,
+        clue_count int NOT NULL DEFAULT 0,
+        created_at timestamp NULL DEFAULT NULL,
+        updated_at timestamp NULL DEFAULT NULL,
+        deleted_at timestamp NULL DEFAULT NULL,
+        PRIMARY KEY (id),
+        KEY lost_pets_user_id_index (user_id),
+        KEY lost_pets_status_index (status),
+        KEY lost_pets_last_seen_lat_last_seen_lng_index (last_seen_lat, last_seen_lng),
+        KEY lost_pets_created_at_index (created_at),
+        CONSTRAINT lost_pets_user_id_foreign FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    \");
+    " 2>/dev/null || true
+fi
+
+# Create pet_clues table if not exists
+if ! check_table pet_clues; then
+    echo "Creating pet_clues table..."
+    php -r "
+    \$pdo = new PDO('mysql:host=mysql;port=3306;dbname=forum', 'forum_user', 'forum_pass');
+    \$pdo->exec(\"
+    CREATE TABLE IF NOT EXISTS pet_clues (
+        id bigint unsigned NOT NULL AUTO_INCREMENT,
+        lost_pet_id bigint unsigned NOT NULL,
+        user_id bigint unsigned NOT NULL,
+        lat decimal(10,7) NOT NULL,
+        lng decimal(10,7) NOT NULL,
+        address varchar(255) DEFAULT NULL,
+        seen_at timestamp NOT NULL,
+        description text DEFAULT NULL,
+        photo_path varchar(255) DEFAULT NULL,
+        is_private tinyint(1) NOT NULL DEFAULT 1,
+        is_verified tinyint(1) NOT NULL DEFAULT 0,
+        created_at timestamp NULL DEFAULT NULL,
+        updated_at timestamp NULL DEFAULT NULL,
+        deleted_at timestamp NULL DEFAULT NULL,
+        PRIMARY KEY (id),
+        KEY pet_clues_lost_pet_id_index (lost_pet_id),
+        KEY pet_clues_user_id_index (user_id),
+        KEY pet_clues_lat_lng_index (lat, lng),
+        KEY pet_clues_is_private_index (is_private),
+        KEY pet_clues_created_at_index (created_at),
+        CONSTRAINT pet_clues_lost_pet_id_foreign FOREIGN KEY (lost_pet_id) REFERENCES lost_pets (id) ON DELETE CASCADE,
+        CONSTRAINT pet_clues_user_id_foreign FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    \");
+    " 2>/dev/null || true
+fi
+
 # Insert migration records if not exists
 echo "Updating migration records..."
 php -r "
@@ -250,14 +324,19 @@ php -r "
     '2024_01_01_000001_create_users_table',
     '2024_01_01_000002_create_topics_table',
     '2024_01_01_000003_create_replies_table',
-    // Mark Sanctum's default migration as already run to avoid duplicate table errors
-    '2019_12_14_000001_create_personal_access_tokens_table'
+    '2019_12_14_000001_create_personal_access_tokens_table',
+    '2024_01_01_000005_create_lost_pets_table',
+    '2024_01_01_000006_create_pet_clues_table'
 ];
 \$stmt = \$pdo->prepare('INSERT IGNORE INTO migrations (migration, batch) VALUES (?, 1)');
 foreach (\$migrations as \$migration) {
     \$stmt->execute([\$migration]);
 }
 " 2>/dev/null || true
+
+# Create storage link for file uploads
+echo "Creating storage link..."
+php artisan storage:link || true
 
 # Run migrations to ensure everything is up to date (will skip existing tables)
 echo "Running migrations to ensure schema is up to date..."

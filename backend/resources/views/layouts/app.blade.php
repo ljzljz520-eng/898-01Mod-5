@@ -6,7 +6,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', '学习交流论坛') - 学习交流论坛</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @stack('styles')
 </head>
 <body class="min-h-screen bg-neutral-50 flex flex-col">
     <nav class="bg-white border-b border-neutral-100 shadow-sm">
@@ -25,19 +24,26 @@
                         <a href="{{ route('topics.index') }}" class="text-neutral-600 hover:text-primary-600">
                             讨论
                         </a>
-                        <a href="{{ route('lost-pets.index') }}" class="text-neutral-600 hover:text-primary-600">
-                            宠物寻回
-                        </a>
-                        <a href="{{ route('lost-pets.map') }}" class="text-neutral-600 hover:text-primary-600">
-                            寻回地图
+                        <a href="{{ route('topics.index') }}?type=notice" class="text-neutral-600 hover:text-primary-600">
+                            物业公告
                         </a>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4 text-sm">
                     @auth
-                        <a href="{{ route('topics.create') }}" class="btn-primary">
-                            发布主题
-                        </a>
+                        <div class="relative" data-dropdown>
+                            <button type="button" class="btn-primary flex items-center gap-1" data-dropdown-trigger>
+                                发布 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden" data-dropdown-menu>
+                                <a href="{{ route('topics.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    普通发帖
+                                </a>
+                                <a href="{{ route('property-notices.create') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    发布物业公告
+                                </a>
+                            </div>
+                        </div>
                         <span class="text-neutral-700">{{ auth()->user()->username }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="inline">
                             @csrf
@@ -85,6 +91,5 @@
             <p class="text-center text-xs text-neutral-500">© 2024 学习交流论坛 · Inspired by SegmentFault UI</p>
         </div>
     </footer>
-    @stack('scripts')
 </body>
 </html>

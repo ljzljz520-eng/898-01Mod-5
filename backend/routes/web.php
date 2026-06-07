@@ -19,11 +19,13 @@ Route::resource('topics', App\Http\Controllers\TopicController::class);
 Route::post('topics/{topic}/replies', [App\Http\Controllers\ReplyController::class, 'store'])->name('replies.store')->middleware('auth');
 Route::delete('replies/{reply}', [App\Http\Controllers\ReplyController::class, 'destroy'])->name('replies.destroy')->middleware('auth');
 
-// 宠物走失寻回路由
-Route::get('lost-pets/map', [App\Http\Controllers\LostPetController::class, 'map'])->name('lost-pets.map');
-Route::resource('lost-pets', App\Http\Controllers\LostPetController::class);
-Route::post('lost-pets/{lostPet}/clues', [App\Http\Controllers\LostPetController::class, 'storeClue'])->name('lost-pets.clues.store')->middleware('auth');
-Route::post('lost-pets/{lostPet}/mark-found', [App\Http\Controllers\LostPetController::class, 'markFound'])->name('lost-pets.mark-found')->middleware('auth');
-Route::post('lost-pets/{lostPet}/close', [App\Http\Controllers\LostPetController::class, 'close'])->name('lost-pets.close')->middleware('auth');
-Route::post('pet-clues/{clue}/verify', [App\Http\Controllers\LostPetController::class, 'verifyClue'])->name('pet-clues.verify')->middleware('auth');
-Route::delete('pet-clues/{clue}', [App\Http\Controllers\LostPetController::class, 'destroyClue'])->name('pet-clues.destroy')->middleware('auth');
+// 物业公告路由
+Route::prefix('property-notices')->middleware('auth')->group(function () {
+    Route::get('/create', [App\Http\Controllers\PropertyNoticeWebController::class, 'create'])->name('property-notices.create');
+    Route::post('/', [App\Http\Controllers\PropertyNoticeWebController::class, 'store'])->name('property-notices.store');
+    Route::get('/{topic}/edit', [App\Http\Controllers\PropertyNoticeWebController::class, 'edit'])->name('property-notices.edit');
+    Route::put('/{topic}', [App\Http\Controllers\PropertyNoticeWebController::class, 'update'])->name('property-notices.update');
+    Route::get('/{topic}/read-receipts', [App\Http\Controllers\PropertyNoticeWebController::class, 'readReceipts'])->name('property-notices.read-receipts')->middleware('can:admin');
+    Route::get('/{topic}/phone-reminders', [App\Http\Controllers\PropertyNoticeWebController::class, 'phoneReminders'])->name('property-notices.phone-reminders')->middleware('can:admin');
+    Route::get('/{topic}/version-history', [App\Http\Controllers\PropertyNoticeWebController::class, 'versionHistory'])->name('property-notices.version-history');
+});

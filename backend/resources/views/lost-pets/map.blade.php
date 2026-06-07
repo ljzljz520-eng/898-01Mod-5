@@ -13,6 +13,10 @@
             <a href="{{ route('lost-pets.create') }}" class="btn-primary">
                 <span class="mr-1">➕</span> 发布走失信息
             </a>
+        @else
+            <a href="{{ route('login') }}" class="btn-primary">
+                <span class="mr-1">🔐</span> 登录后发布
+            </a>
         @endauth
     </div>
 </div>

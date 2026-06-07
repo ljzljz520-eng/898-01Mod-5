@@ -108,6 +108,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // 下拉菜单
+    document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
+        const trigger = dropdown.querySelector('[data-dropdown-trigger]');
+        const menu = dropdown.querySelector('[data-dropdown-menu]');
+        
+        if (trigger && menu) {
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+    });
+
     // 分类/搜索/分页无刷新
     const filterForm = document.querySelector('[data-topic-filter]');
     if (filterForm) {

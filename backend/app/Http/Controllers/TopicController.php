@@ -15,13 +15,25 @@ class TopicController extends Controller
 
     public function index(Request $request)
     {
+        $type = $request->get('type', 'all');
+
         $query = Topic::with('user')
             ->where('status', 1)
             ->orderBy('is_pinned', 'desc')
             ->orderBy('created_at', 'desc');
 
+        if ($type === 'notice') {
+            $query->where('is_property_notice', true);
+        } elseif ($type === 'post') {
+            $query->where('is_property_notice', false);
+        }
+
         if ($request->has('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
+        }
+
+        if ($request->has('notice_type') && $request->notice_type !== 'all') {
+            $query->where('notice_type', $request->notice_type);
         }
 
         if ($request->has('search')) {
@@ -34,7 +46,15 @@ class TopicController extends Controller
 
         $topics = $query->paginate(20)->appends(request()->query());
 
-        return view('topics.index', compact('topics'));
+        if (auth()->check()) {
+            $topics->getCollection()->each(function ($topic) {
+                if ($topic->is_property_notice) {
+                    $topic->is_read = $topic->isReadBy(auth()->user());
+                }
+            });
+        }
+
+        return view('topics.index', compact('topics', 'type'));
     }
 
     public function show(Topic $topic)
@@ -44,7 +64,36 @@ class TopicController extends Controller
             $query->orderBy('created_at', 'asc');
         }, 'replies.user']);
 
-        return view('topics.show', compact('topic'));
+        $isRead = false;
+        if (auth()->check() && $topic->is_property_notice) {
+            $receipt = $topic->markAsRead(
+                auth()->user(),
+                request()->ip(),
+                request()->userAgent()
+            );
+            $isRead = $receipt && $receipt->read_at ? true : false;
+        }
+
+        $readStats = null;
+        $latestDiff = null;
+        if ($topic->is_property_notice) {
+            $readStats = [
+                'read_count' => $topic->read_count,
+                'unread_count' => $topic->unread_count,
+                'total_recipients' => $topic->total_recipients,
+                'read_rate' => $topic->read_rate,
+            ];
+
+            $lastTwoVersions = $topic->versions()->take(2)->get();
+            if ($lastTwoVersions->count() >= 2) {
+                $latestDiff = $topic->getVersionDiff(
+                    $lastTwoVersions[1]->version_number,
+                    $lastTwoVersions[0]->version_number
+                );
+            }
+        }
+
+        return view('topics.show', compact('topic', 'isRead', 'readStats', 'latestDiff'));
     }
 
     public function create()
